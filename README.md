@@ -1,23 +1,25 @@
 # CityFix
 
-Beginner-friendly civic issue reporting system.
+Crowdsourced Civic Issue Reporting System.
 
 ## Stack
+
 HTML, CSS, JavaScript, Node.js, Express.js, MongoDB.
 
 ## Run
+
 1. Install Node.js and MongoDB.
 2. Open this folder in VS Code.
 3. Run `npm install`
-4. Copy `.env.example` to `.env`
+4. Create a `.env` file using `.env.example`
 5. Start MongoDB.
 6. Run `node server.js`
-7. Open http://localhost:5000
+7. Open http://localhost:5001
 
 Do NOT use VS Code Live Server.
 
-## Default admin
-Email: admin@civic.gov.in
-Password: admin123
+## Admin
 
-Change these values in `.env` before deployment.
+Admin credentials are configured through `.env`.
+
+Do not commit your `.env` file to GitHub.

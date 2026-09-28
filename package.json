@@ -1,5 +1,5 @@
 {
-  "name": "civicconnect",
+  "name": "cityfix",
   "version": "1.0.0",
   "description": "Simple civic issue reporting system",
   "main": "server.js",

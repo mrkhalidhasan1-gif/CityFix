@@ -18,7 +18,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/health", (req, res) => {
-  res.json({ success: true, message: "CivicConnect API is running" });
+  res.json({ success: true, message: "CityFix API is running" });
 });
 
 app.use("/api/auth", authRoutes);
@@ -38,7 +38,7 @@ async function startServer() {
     await seedAdmin();
 
     app.listen(PORT, () => {
-      console.log(`CivicConnect running at http://localhost:${PORT}`);
+      console.log(`CityFix running at http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error("Server failed:", error.message);

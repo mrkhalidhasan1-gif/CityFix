@@ -276,3 +276,35 @@ textarea { min-height: 130px; resize: vertical; }
   .hero-card { max-width: 550px; }
   .issue-card, .dashboard-head { flex-direction: column; }
 }
+
+.site-footer {
+  background: var(--green-light);
+  border-top: 1px solid var(--border);
+  margin-top: 20px;
+  padding: 24px 0;
+}
+
+.footer-inner {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+}
+
+.site-footer p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 13px;
+}
+
+.site-footer .creator {
+  color: var(--green-dark);
+  font-weight: 700;
+}
+
+@media (max-width: 800px) {
+  .footer-inner {
+    flex-direction: column;
+    text-align: center;
+  }
+}

@@ -3,7 +3,7 @@ const User = require("../models/User");
 
 async function seedAdmin() {
   const email = (process.env.ADMIN_EMAIL || "admin@civic.gov.in").toLowerCase();
-  const password = process.env.ADMIN_PASSWORD || "admin123";
+  const password = process.env.ADMIN_PASSWORD;
 
   const existing = await User.findOne({ email });
 
