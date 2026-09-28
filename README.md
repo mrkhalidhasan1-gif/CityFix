@@ -1,4 +1,4 @@
-# CivicConnect
+# CityFix
 
 Beginner-friendly civic issue reporting system.
 
