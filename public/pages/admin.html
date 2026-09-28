@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin | CivicConnect</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="/"><span class="brand-mark">✓</span>CivicConnect Admin</a>
+      <button class="btn btn-small" onclick="civicAPI.logout()">Logout</button>
+    </div>
+  </header>
+
+  <main class="dashboard">
+    <div class="dashboard-head">
+      <div>
+        <div class="eyebrow">ADMIN CONTROL CENTER</div>
+        <h1>Issue Management</h1>
+      </div>
+    </div>
+
+    <div class="filters">
+      <select id="statusFilter" onchange="loadIssues()">
+        <option>All</option>
+        <option>Pending</option>
+        <option>In Progress</option>
+        <option>Resolved</option>
+      </select>
+
+      <select id="categoryFilter" onchange="loadIssues()">
+        <option>All</option>
+        <option>Road & Pothole</option>
+        <option>Garbage & Waste</option>
+        <option>Streetlight</option>
+        <option>Water & Drainage</option>
+        <option>Public Safety</option>
+        <option>Other</option>
+      </select>
+    </div>
+
+    <div id="issues" class="issue-grid"></div>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    const user = civicAPI.requireLogin(true);
+    if (user) loadIssues();
+
+    async function loadIssues() {
+      const status = document.getElementById("statusFilter").value;
+      const category = document.getElementById("categoryFilter").value;
+
+      try {
+        const data = await civicAPI.request(
+          `/issues?status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`
+        );
+
+        document.getElementById("issues").innerHTML = data.issues.length
+          ? data.issues.map(issue => `
+            <article class="issue-card">
+              <div>
+                <span class="badge">${issue.category}</span>
+                <h3>${escapeHtml(issue.title)}</h3>
+                <p class="muted">${escapeHtml(issue.description)}</p>
+                <small class="muted">
+                  ${escapeHtml(issue.city)} · Reported by ${escapeHtml(issue.userId?.name || "Citizen")}
+                </small>
+              </div>
+              <div>
+                <select onchange="updateStatus('${issue._id}', this.value)">
+                  ${["Pending", "In Progress", "Resolved"].map(status =>
+                    `<option ${issue.status === status ? "selected" : ""}>${status}</option>`
+                  ).join("")}
+                </select>
+              </div>
+            </article>
+          `).join("")
+          : `<div class="panel"><h3>No issues found</h3></div>`;
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        await civicAPI.request(`/issues/${id}/status`, {
+          method: "PUT",
+          body: JSON.stringify({ status })
+        });
+
+        showToast("Status updated");
+        loadIssues();
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, char => ({
+        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+      }[char]));
+    }
+  </script>
+</body>
+</html>

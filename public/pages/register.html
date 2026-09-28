@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Register | CivicConnect</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">✓</span>
+        CivicConnect
+      </a>
+    </div>
+  </header>
+
+  <main class="auth-wrap">
+    <form class="auth-card" id="registerForm">
+      <div class="eyebrow">JOIN CIVICCONNECT</div>
+      <h1>Create account</h1>
+
+      <div class="form-group">
+        <label for="name">Name</label>
+        <input class="form-control" id="name" required>
+      </div>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-control" id="email" type="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-control" id="password" type="password" minlength="6" required>
+      </div>
+
+      <button class="btn" type="submit">Create Account</button>
+
+      <p class="hint">
+        Already registered?
+        <a href="/pages/login.html" style="color:var(--green);font-weight:700">Login</a>
+      </p>
+    </form>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    document.getElementById("registerForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const name = document.getElementById("name").value.trim();
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const data = await civicAPI.request("/auth/register", {
+          method: "POST",
+          body: JSON.stringify({ name, email, password })
+        });
+
+        civicAPI.saveAuth(data);
+        window.location.href = "/pages/dashboard.html";
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>

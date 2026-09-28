@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | CivicConnect</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header class="navbar">
+    <div class="container nav-inner">
+      <a class="brand" href="/">
+        <span class="brand-mark">✓</span>
+        CivicConnect
+      </a>
+    </div>
+  </header>
+
+  <main class="auth-wrap">
+    <form class="auth-card" id="loginForm">
+      <div class="eyebrow">WELCOME BACK</div>
+      <h1>Login</h1>
+
+      <div class="form-group">
+        <label for="email">Email</label>
+        <input class="form-control" id="email" type="email" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input class="form-control" id="password" type="password" required>
+      </div>
+
+      <button class="btn" type="submit">Login</button>
+
+      <p class="hint">
+        New citizen?
+        <a href="/pages/register.html" style="color:var(--green);font-weight:700">Create account</a>
+      </p>
+      <p class="hint">Admin login uses the admin credentials from your .env file.</p>
+    </form>
+  </main>
+
+  <script src="/js/api.js"></script>
+  <script src="/js/common.js"></script>
+  <script>
+    document.getElementById("loginForm").addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = document.getElementById("email").value.trim();
+      const password = document.getElementById("password").value;
+
+      try {
+        const data = await civicAPI.request("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password })
+        });
+
+        civicAPI.saveAuth(data);
+
+        window.location.href =
+          data.user.role === "admin"
+            ? "/pages/admin.html"
+            : "/pages/dashboard.html";
+      } catch (error) {
+        showToast(error.message, "error");
+      }
+    });
+  </script>
+</body>
+</html>
