@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Issue Details | CityFix</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix</a>
+    <nav><a href="/pages/issues.html">All Issues</a></nav>
+  </div>
+</header>
+
+<main class="dashboard" id="page">
+  <div id="issueDetails" class="panel detail-panel">Loading issue...</div>
+</main>
+
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const id = new URLSearchParams(window.location.search).get("id");
+loadIssue();
+
+async function loadIssue() {
+  if (!id) return renderError("Issue ID is missing.");
+
+  try {
+    const publicResponse = await fetch(`/api/issues/public/${encodeURIComponent(id)}`);
+    const publicData = await publicResponse.json();
+    if (!publicResponse.ok) throw new Error(publicData.message || "Issue not found");
+
+    let issue = publicData.issue;
+    let privateIssue = null;
+
+    if (civicAPI.getToken()) {
+      try {
+        const privateData = await civicAPI.request(` /issues/${id}`.trim());
+        privateIssue = privateData.issue;
+        issue = privateIssue;
+      } catch {}
+    }
+
+    renderIssue(issue, Boolean(privateIssue));
+  } catch (error) {
+    renderError(error.message);
+  }
+}
+
+function renderIssue(issue, isPrivate) {
+  const history = issue.statusHistory || [];
+  document.getElementById("issueDetails").innerHTML = `
+    <a class="back-link" href="/pages/issues.html">← Back to issues</a>
+    <div class="detail-grid">
+      <div>
+        ${issue.image ? `<img class="detail-image" src="${issue.image}" alt="Issue photo">` : `<div class="detail-image placeholder">No photo uploaded</div>`}
+      </div>
+      <div>
+        <div class="issue-topline">
+          <span class="badge">${escapeHtml(issue.category)}</span>
+          <span class="badge status-${issue.status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(issue.status)}</span>
+        </div>
+        <h1>${escapeHtml(issue.title)}</h1>
+        <p class="muted">${escapeHtml(issue.description)}</p>
+        <p><strong>City:</strong> ${escapeHtml(issue.city)}</p>
+        ${issue.address ? `<p><strong>Location:</strong> ${escapeHtml(issue.address)}</p>` : ""}
+        <small class="muted">Reported ${new Date(issue.createdAt).toLocaleString()}</small>
+      </div>
+    </div>
+
+    <h2>Status Timeline</h2>
+    <div class="timeline">
+      ${history.map(item => `
+        <div class="timeline-item">
+          <span class="timeline-dot"></span>
+          <div>
+            <strong>${escapeHtml(item.status)}</strong>
+            <small class="muted">${new Date(item.date).toLocaleString()}</small>
+            ${isPrivate && item.note ? `<p class="timeline-note">${escapeHtml(item.note)}</p>` : ""}
+          </div>
+        </div>
+      `).join("")}
+    </div>
+    ${!isPrivate ? `<p class="hint">Login to see any messages added by the administration to your report.</p>` : ""}
+  `;
+}
+
+function renderError(message) {
+  document.getElementById("issueDetails").innerHTML = `<h2>Could not load issue</h2><p class="muted">${escapeHtml(message)}</p>`;
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+}
+</script>
+</body>
+</html>

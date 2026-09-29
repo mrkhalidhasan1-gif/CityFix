@@ -7,103 +7,116 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header class="navbar">
-    <div class="container nav-inner">
-      <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix Admin</a>
+<header class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix Admin</a>
+    <nav>
+      <a href="/pages/issues.html">Public Issues</a>
       <button class="btn btn-small" onclick="civicAPI.logout()">Logout</button>
+    </nav>
+  </div>
+</header>
+
+<main class="dashboard">
+  <div class="dashboard-head">
+    <div>
+      <div class="eyebrow">ADMIN CONTROL CENTER</div>
+      <h1>Issue Management</h1>
     </div>
-  </header>
+  </div>
 
-  <main class="dashboard">
-    <div class="dashboard-head">
-      <div>
-        <div class="eyebrow">ADMIN CONTROL CENTER</div>
-        <h1>Issue Management</h1>
-      </div>
-    </div>
+  <div class="filters">
+    <select id="statusFilter" onchange="loadIssues()">
+      <option>All</option><option>Pending</option><option>In Progress</option><option>Resolved</option>
+    </select>
+    <select id="categoryFilter" onchange="loadIssues()">
+      <option>All</option><option>Road & Pothole</option><option>Garbage & Waste</option>
+      <option>Streetlight</option><option>Water & Drainage</option><option>Public Safety</option><option>Other</option>
+    </select>
+  </div>
 
-    <div class="filters">
-      <select id="statusFilter" onchange="loadIssues()">
-        <option>All</option>
-        <option>Pending</option>
-        <option>In Progress</option>
-        <option>Resolved</option>
-      </select>
+  <div id="issues" class="issue-grid"></div>
+</main>
 
-      <select id="categoryFilter" onchange="loadIssues()">
-        <option>All</option>
-        <option>Road & Pothole</option>
-        <option>Garbage & Waste</option>
-        <option>Streetlight</option>
-        <option>Water & Drainage</option>
-        <option>Public Safety</option>
-        <option>Other</option>
-      </select>
-    </div>
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const user = civicAPI.requireLogin(true);
+if (user) loadIssues();
 
-    <div id="issues" class="issue-grid"></div>
-  </main>
+async function loadIssues() {
+  const status = document.getElementById("statusFilter").value;
+  const category = document.getElementById("categoryFilter").value;
 
-  <script src="/js/api.js"></script>
-  <script src="/js/common.js"></script>
-  <script>
-    const user = civicAPI.requireLogin(true);
-    if (user) loadIssues();
+  try {
+    const data = await civicAPI.request(`/issues?status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`);
 
-    async function loadIssues() {
-      const status = document.getElementById("statusFilter").value;
-      const category = document.getElementById("categoryFilter").value;
+    document.getElementById("issues").innerHTML = data.issues.length
+      ? data.issues.map(issue => `
+        <article class="issue-card issue-card-rich">
+          ${issue.image ? `<img class="issue-thumb" src="${issue.image}" alt="Issue photo">` : `<div class="issue-thumb placeholder">No photo</div>`}
+          <div class="issue-content">
+            <div class="issue-topline">
+              <span class="badge">${escapeHtml(issue.category)}</span>
+              <span class="badge status-${issue.status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(issue.status)}</span>
+            </div>
+            <h3>${escapeHtml(issue.title)}</h3>
+            <p class="muted">${escapeHtml(issue.description)}</p>
+            <small class="muted">${escapeHtml(issue.city)} · Reported by ${escapeHtml(issue.userId?.name || "Citizen")}</small>
+            <div class="admin-actions">
+              <select onchange="openStatusModal('${issue._id}', this.value)">
+                ${["Pending", "In Progress", "Resolved"].map(status =>
+                  `<option ${issue.status === status ? "selected" : ""}>${status}</option>`
+                ).join("")}
+              </select>
+              <a class="btn btn-small btn-outline" href="/pages/issue.html?id=${issue._id}">View Details</a>
+            </div>
+          </div>
+        </article>
+      `).join("")
+      : `<div class="panel"><h3>No issues found</h3></div>`;
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
 
-      try {
-        const data = await civicAPI.request(
-          `/issues?status=${encodeURIComponent(status)}&category=${encodeURIComponent(category)}`
-        );
+function openStatusModal(id, status) {
+  const content = `
+    <p class="muted">Add a short message explaining this status update. The citizen will see it in the issue timeline.</p>
+    <textarea id="statusNote" class="form-control" placeholder="Example: Road repair team has been assigned."></textarea>`;
+  const actions = `
+    <button class="btn btn-outline" onclick="closeModal(); loadIssues();">Cancel</button>
+    <button class="btn" onclick="saveStatus('${id}', '${status}')">Update Status</button>`;
+  showModal("Update Issue Status", content, actions);
+}
 
-        document.getElementById("issues").innerHTML = data.issues.length
-          ? data.issues.map(issue => `
-            <article class="issue-card">
-              <div>
-                <span class="badge">${issue.category}</span>
-                <h3>${escapeHtml(issue.title)}</h3>
-                <p class="muted">${escapeHtml(issue.description)}</p>
-                <small class="muted">
-                  ${escapeHtml(issue.city)} · Reported by ${escapeHtml(issue.userId?.name || "Citizen")}
-                </small>
-              </div>
-              <div>
-                <select onchange="updateStatus('${issue._id}', this.value)">
-                  ${["Pending", "In Progress", "Resolved"].map(status =>
-                    `<option ${issue.status === status ? "selected" : ""}>${status}</option>`
-                  ).join("")}
-                </select>
-              </div>
-            </article>
-          `).join("")
-          : `<div class="panel"><h3>No issues found</h3></div>`;
-      } catch (error) {
-        showToast(error.message, "error");
-      }
-    }
+async function saveStatus(id, status) {
+  const note = document.getElementById("statusNote").value.trim();
+  if (!note) {
+    showToast("Please add a comment before updating status.", "error");
+    return;
+  }
 
-    async function updateStatus(id, status) {
-      try {
-        await civicAPI.request(`/issues/${id}/status`, {
-          method: "PUT",
-          body: JSON.stringify({ status })
-        });
+  try {
+    await civicAPI.request(`/issues/${id}/status`, {
+      method: "PUT",
+      body: JSON.stringify({ status, note })
+    });
+    showModal(
+      "Status Updated",
+      `<p class="success-message">The issue is now <strong>${escapeHtml(status)}</strong>.</p><p class="muted">The citizen can see your comment in the issue timeline.</p>`,
+      `<button class="btn" onclick="closeModal(); loadIssues();">Done</button>`
+    );
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
 
-        showToast("Status updated");
-        loadIssues();
-      } catch (error) {
-        showToast(error.message, "error");
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, char => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-      }[char]));
-    }
-  </script>
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+}
+</script>
 </body>
 </html>

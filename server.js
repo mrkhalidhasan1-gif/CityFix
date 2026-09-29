@@ -8,13 +8,10 @@ const authRoutes = require("./routes/authRoutes");
 const issueRoutes = require("./routes/issueRoutes");
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
-app.use(express.json({ limit: "2mb" }));
-app.use(express.urlencoded({ extended: true }));
-
-// Serve the frontend from /public.
-// URLs never need /public in them.
+app.use(express.json({ limit: "8mb" }));
+app.use(express.urlencoded({ extended: true, limit: "8mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
 app.get("/api/health", (req, res) => {
@@ -24,7 +21,6 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/issues", issueRoutes);
 
-// Frontend fallback
 app.get("*", (req, res) => {
   if (req.path.startsWith("/api/")) {
     return res.status(404).json({ success: false, message: "API route not found" });

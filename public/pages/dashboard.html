@@ -7,79 +7,82 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <header class="navbar">
-    <div class="container nav-inner">
-      <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix</a>
-      <nav>
-        <span id="welcome" class="muted"></span>
-        <button class="btn btn-small" onclick="civicAPI.logout()">Logout</button>
-      </nav>
+<header class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix</a>
+    <nav>
+      <a href="/pages/issues.html">Explore Issues</a>
+      <span id="welcome" class="muted"></span>
+      <button class="btn btn-small" onclick="civicAPI.logout()">Logout</button>
+    </nav>
+  </div>
+</header>
+
+<main class="dashboard">
+  <div class="dashboard-head">
+    <div>
+      <div class="eyebrow">CITIZEN DASHBOARD</div>
+      <h1>My Reports</h1>
     </div>
-  </header>
+    <a class="btn" href="/pages/report.html">+ Report Issue</a>
+  </div>
 
-  <main class="dashboard">
-    <div class="dashboard-head">
-      <div>
-        <div class="eyebrow">CITIZEN DASHBOARD</div>
-        <h1>My Reports</h1>
-      </div>
-      <a class="btn" href="/pages/report.html">+ Report Issue</a>
-    </div>
+  <div class="stats">
+    <div class="stat"><span class="muted">Total reports</span><strong id="total">0</strong></div>
+    <div class="stat"><span class="muted">In progress</span><strong id="progress">0</strong></div>
+    <div class="stat"><span class="muted">Resolved</span><strong id="resolved">0</strong></div>
+  </div>
 
-    <div class="stats">
-      <div class="stat"><span class="muted">Total reports</span><strong id="total">0</strong></div>
-      <div class="stat"><span class="muted">In progress</span><strong id="progress">0</strong></div>
-      <div class="stat"><span class="muted">Resolved</span><strong id="resolved">0</strong></div>
-    </div>
+  <div id="issues" class="issue-grid"></div>
+</main>
 
-    <div id="issues" class="issue-grid"></div>
-  </main>
+<script src="/js/api.js"></script>
+<script src="/js/common.js"></script>
+<script>
+const user = civicAPI.requireLogin();
+if (user) {
+  document.getElementById("welcome").textContent = `Hi, ${user.name}`;
+  loadIssues();
+}
 
-  <script src="/js/api.js"></script>
-  <script src="/js/common.js"></script>
-  <script>
-    const user = civicAPI.requireLogin();
-    if (user) {
-      document.getElementById("welcome").textContent = `Hi, ${user.name}`;
-      loadIssues();
-    }
+async function loadIssues() {
+  try {
+    const data = await civicAPI.request("/issues/mine");
+    const issues = data.issues;
 
-    async function loadIssues() {
-      try {
-        const data = await civicAPI.request("/issues/mine");
-        const issues = data.issues;
+    document.getElementById("total").textContent = issues.length;
+    document.getElementById("progress").textContent = issues.filter(i => i.status === "In Progress").length;
+    document.getElementById("resolved").textContent = issues.filter(i => i.status === "Resolved").length;
 
-        document.getElementById("total").textContent = issues.length;
-        document.getElementById("progress").textContent =
-          issues.filter(i => i.status === "In Progress").length;
-        document.getElementById("resolved").textContent =
-          issues.filter(i => i.status === "Resolved").length;
+    document.getElementById("issues").innerHTML = issues.length
+      ? issues.map(issue => `
+        <article class="issue-card issue-card-rich">
+          ${issue.image ? `<img class="issue-thumb" src="${issue.image}" alt="Issue photo">` : `<div class="issue-thumb placeholder">No photo</div>`}
+          <div class="issue-content">
+            <div class="issue-topline">
+              <span class="badge">${escapeHtml(issue.category)}</span>
+              <span class="badge status-${issue.status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(issue.status)}</span>
+            </div>
+            <h3>${escapeHtml(issue.title)}</h3>
+            <p class="muted">${escapeHtml(issue.description)}</p>
+            <small class="muted">${escapeHtml(issue.city)} · ${new Date(issue.createdAt).toLocaleDateString()}</small>
+            <div class="issue-actions">
+              <a class="btn btn-small btn-outline" href="/pages/issue.html?id=${issue._id}">View Details</a>
+            </div>
+          </div>
+        </article>
+      `).join("")
+      : `<div class="panel"><h3>No reports yet</h3><p class="muted">Create your first civic report.</p></div>`;
+  } catch (error) {
+    showToast(error.message, "error");
+  }
+}
 
-        document.getElementById("issues").innerHTML = issues.length
-          ? issues.map(issue => `
-              <article class="issue-card">
-                <div>
-                  <span class="badge">${issue.category}</span>
-                  <h3>${escapeHtml(issue.title)}</h3>
-                  <p class="muted">${escapeHtml(issue.description)}</p>
-                  <small class="muted">${escapeHtml(issue.city)} · ${new Date(issue.createdAt).toLocaleDateString()}</small>
-                </div>
-                <div>
-                  <span class="badge">${issue.status}</span>
-                </div>
-              </article>
-            `).join("")
-          : `<div class="panel"><h3>No reports yet</h3><p class="muted">Create your first civic report.</p></div>`;
-      } catch (error) {
-        showToast(error.message, "error");
-      }
-    }
-
-    function escapeHtml(value) {
-      return String(value).replace(/[&<>"']/g, char => ({
-        "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
-      }[char]));
-    }
-  </script>
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+}
+</script>
 </body>
 </html>

@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Public Issues | CityFix</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<header class="navbar">
+  <div class="container nav-inner">
+    <a class="brand" href="/"><span class="brand-mark">✓</span>CityFix</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/pages/login.html">Login</a>
+    </nav>
+  </div>
+</header>
+
+<main class="dashboard">
+  <div class="dashboard-head">
+    <div>
+      <div class="eyebrow">CITY TRANSPARENCY</div>
+      <h1>Reported Issues</h1>
+      <p class="muted">See civic issues reported by the community and track their status.</p>
+    </div>
+    <a class="btn" href="/pages/register.html">Report an Issue</a>
+  </div>
+
+  <section class="stats stats-five">
+    <div class="stat"><span class="muted">Reports this month</span><strong id="totalReports">0</strong></div>
+    <div class="stat"><span class="muted">Citizens reporting</span><strong id="uniqueUsers">0</strong></div>
+    <div class="stat"><span class="muted">Pending</span><strong id="pending">0</strong></div>
+    <div class="stat"><span class="muted">In progress</span><strong id="inProgress">0</strong></div>
+    <div class="stat"><span class="muted">Resolved</span><strong id="resolved">0</strong></div>
+  </section>
+
+  <div class="public-filters">
+    <input class="form-control" id="search" placeholder="Search issues, city or address...">
+    <input class="form-control" id="city" placeholder="Filter by city">
+    <select id="status">
+      <option>All</option><option>Pending</option><option>In Progress</option><option>Resolved</option>
+    </select>
+    <select id="category">
+      <option>All</option><option>Road & Pothole</option><option>Garbage & Waste</option>
+      <option>Streetlight</option><option>Water & Drainage</option><option>Public Safety</option><option>Other</option>
+    </select>
+    <button class="btn" onclick="loadIssues()">Search</button>
+  </div>
+
+  <div id="issues" class="issue-grid"></div>
+</main>
+
+<script src="/js/common.js"></script>
+<script>
+loadStats();
+loadIssues();
+
+async function loadStats() {
+  try {
+    const response = await fetch("/api/issues/stats");
+    const data = await response.json();
+    const stats = data.stats;
+    document.getElementById("totalReports").textContent = stats.totalReports;
+    document.getElementById("uniqueUsers").textContent = stats.uniqueUsers;
+    document.getElementById("pending").textContent = stats.pending;
+    document.getElementById("inProgress").textContent = stats.inProgress;
+    document.getElementById("resolved").textContent = stats.resolved;
+  } catch {
+    showToast("Could not load statistics", "error");
+  }
+}
+
+async function loadIssues() {
+  const params = new URLSearchParams({
+    q: document.getElementById("search").value.trim(),
+    city: document.getElementById("city").value.trim(),
+    status: document.getElementById("status").value,
+    category: document.getElementById("category").value
+  });
+
+  try {
+    const response = await fetch(`/api/issues/public?${params}`);
+    const data = await response.json();
+
+    document.getElementById("issues").innerHTML = data.issues.length
+      ? data.issues.map(issue => `
+        <article class="issue-card issue-card-rich">
+          ${issue.image ? `<img class="issue-thumb" src="${issue.image}" alt="Issue photo">` : `<div class="issue-thumb placeholder">No photo</div>`}
+          <div class="issue-content">
+            <div class="issue-topline">
+              <span class="badge">${escapeHtml(issue.category)}</span>
+              <span class="badge status-${issue.status.toLowerCase().replaceAll(" ", "-")}">${escapeHtml(issue.status)}</span>
+            </div>
+            <h3>${escapeHtml(issue.title)}</h3>
+            <p class="muted">${escapeHtml(issue.description)}</p>
+            <small class="muted">${escapeHtml(issue.city)} · ${new Date(issue.createdAt).toLocaleDateString()}</small>
+            <div class="issue-actions"><a class="btn btn-small btn-outline" href="/pages/issue.html?id=${issue._id}">View Details</a></div>
+          </div>
+        </article>
+      `).join("")
+      : `<div class="panel"><h3>No public issues found</h3><p class="muted">Try another search or filter.</p></div>`;
+  } catch {
+    showToast("Could not load public issues", "error");
+  }
+}
+
+function escapeHtml(value) {
+  return String(value).replace(/[&<>"']/g, char => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;"
+  }[char]));
+}
+</script>
+</body>
+</html>
